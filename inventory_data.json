@@ -1,0 +1,110 @@
+{
+    "Ground": {
+        "Potato": {
+            "price": 30,
+            "stock": 42.5
+        },
+        "Onion": {
+            "price": 40,
+            "stock": 28.5
+        },
+        "Carrot": {
+            "price": 60,
+            "stock": 24.0
+        },
+        "Radish": {
+            "price": 35,
+            "stock": 17.0
+        },
+        "Beetroot": {
+            "price": 50,
+            "stock": 14.0
+        },
+        "Sweet_Potato": {
+            "price": 45,
+            "stock": 18.5
+        },
+        "Turnip": {
+            "price": 25,
+            "stock": 18
+        }
+    },
+    "Leafy": {
+        "Spinach": {
+            "price": 40,
+            "stock": 14.0
+        },
+        "Lettuce": {
+            "price": 80,
+            "stock": 10
+        },
+        "Cabbage": {
+            "price": 35,
+            "stock": 25
+        },
+        "Cauliflower": {
+            "price": 50,
+            "stock": 17.5
+        },
+        "Broccoli": {
+            "price": 120,
+            "stock": 10.5
+        },
+        "Mint": {
+            "price": 60,
+            "stock": 5
+        }
+    },
+    "Fruity_Veges": {
+        "Tomato": {
+            "price": 50,
+            "stock": 29.0
+        },
+        "Cucumber": {
+            "price": 35,
+            "stock": 24.5
+        },
+        "Bell_Pepper": {
+            "price": 80,
+            "stock": 14.5
+        },
+        "Eggplant": {
+            "price": 45,
+            "stock": 20
+        },
+        "Okra": {
+            "price": 60,
+            "stock": 18
+        },
+        "Zucchini": {
+            "price": 70,
+            "stock": 12
+        },
+        "Pumpkin": {
+            "price": 25,
+            "stock": 40
+        }
+    },
+    "Legumes": {
+        "Green_Beans": {
+            "price": 70,
+            "stock": 20
+        },
+        "Peas": {
+            "price": 90,
+            "stock": 15
+        },
+        "Green_Chili": {
+            "price": 100,
+            "stock": 10
+        },
+        "Drumstick": {
+            "price": 80,
+            "stock": 12
+        },
+        "Cluster_Beans": {
+            "price": 60,
+            "stock": 15
+        }
+    }
+}
