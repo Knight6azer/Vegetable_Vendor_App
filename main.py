@@ -36,7 +36,7 @@ def main():
     st.title("🥕 Vegetable Market Vendor System")
     st.markdown("---")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         if st.button("📦 Inventory", use_container_width=True):
@@ -54,6 +54,11 @@ def main():
             st.rerun()
 
     with col4:
+        if st.button("🧾 Receipts", use_container_width=True):
+            st.session_state.current_page = 'receipt'
+            st.rerun()
+
+    with col5:
         if st.button("📈 Analytics", use_container_width=True):
             st.session_state.current_page = 'analytics'
             st.rerun()
@@ -140,7 +145,7 @@ def show_cart_page():
         st.info("Your cart is empty. Go to inventory to add items!")
         return
 
-    total_amount = 0
+    total_amount = st.session_state.cart_manager.get_cart_total()
 
     for item_id, item in cart_items.items():
         col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 2, 1])
@@ -158,7 +163,6 @@ def show_cart_page():
         with col4:
             item_total = item['quantity'] * item['price']
             st.write(f"₹{item_total:.2f}")
-            total_amount += item_total
 
         with col5:
             if st.button("🗑️", key=f"remove_{item_id}"):
@@ -205,6 +209,23 @@ def show_cart_page():
 def show_queue_page():
     st.header("📋 Order Queue")
 
+    if 'last_receipt' in st.session_state and st.session_state.last_receipt:
+        st.success(f"✅ Order {st.session_state.get('last_order_id', '')} processed successfully!")
+        st.markdown("### 🧾 Processed Receipt")
+        st.text(st.session_state.last_receipt)
+        st.download_button(
+            label="Download Receipt",
+            data=st.session_state.last_receipt,
+            file_name=f"receipt_{st.session_state.get('last_order_id', 'order')}.txt",
+            mime="text/plain",
+            key="download_last_receipt"
+        )
+        if st.button("Dismiss Receipt"):
+            st.session_state.last_receipt = None
+            st.session_state.last_order_id = None
+            st.rerun()
+        st.markdown("---")
+
     if not st.session_state.order_queue:
         st.info("No orders in queue.")
         return
@@ -225,22 +246,11 @@ def show_queue_page():
             col1, col2 = st.columns(2)
             with col1:
                 if st.button(f"Process Order", key=f"process_{idx}"):
-                    # Process (dequeue) the order
-                    processed_order = st.session_state.order_queue.pop(0)
+                    # Process (dequeue) the selected order
+                    processed_order = st.session_state.order_queue.pop(idx)
                     receipt = st.session_state.receipt_generator.generate_receipt(processed_order)
-
-                    st.success("✅ Order processed successfully!")
-                    st.markdown("### 🧾 Receipt")
-                    st.text(receipt)
-
-                    # Download receipt
-                    st.download_button(
-                        label="Download Receipt",
-                        data=receipt,
-                        file_name=f"receipt_{processed_order['order_id']}.txt",
-                        mime="text/plain",
-                        key=f"download_{idx}"
-                    )
+                    st.session_state.last_receipt = receipt
+                    st.session_state.last_order_id = processed_order['order_id']
                     st.rerun()
 
             with col2:
@@ -331,7 +341,7 @@ def show_payment_page():
         return
 
     # Calculate Total
-    total_amount = sum(item['price'] * item['quantity'] for item in cart_items.values())
+    total_amount = st.session_state.cart_manager.get_cart_total()
 
     col1, col2 = st.columns([1, 1])
 
