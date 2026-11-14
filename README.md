@@ -299,20 +299,6 @@ Vegetable_Vendor_App/
 
 ---
 
-## Screenshots
-
-> *Add project interface captures to the repository or reference them here:*
-
-| Screen | Description | Preview |
-| :--- | :--- | :--- |
-| **Inventory Catalog** | Real-time stock display, search filter, and low-stock indicators | ![Inventory Screen](docs/screenshots/inventory.png) *(Place screenshot here)* |
-| **Shopping Cart** | Live subtotal calculation, quantity reviews, and queue dispatch | ![Shopping Cart](docs/screenshots/cart.png) *(Place screenshot here)* |
-| **Order Queue & Receipts** | Processed queue management, receipt inspection, and `.txt` export | ![Receipt Preview](docs/screenshots/receipt.png) *(Place screenshot here)* |
-| **Payment Gateway** | Multi-mode simulated payment interface with card & UPI validation | ![Payment Gateway](docs/screenshots/payment.png) *(Place screenshot here)* |
-| **Vendor Analytics** | Interactive Plotly bar and pie charts for inventory intelligence | ![Analytics Dashboard](docs/screenshots/analytics.png) *(Place screenshot here)* |
-
----
-
 ## Future Improvements
 
 - [ ] **Multi-Vendor Role-Based Access Control (RBAC)**: Secure authentication and session isolation for multiple vendor stalls.
