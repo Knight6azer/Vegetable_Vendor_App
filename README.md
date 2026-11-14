@@ -7,13 +7,19 @@
 ## Problem
 
 ### What problem are we solving?
-Traditional local vegetable vending relies almost entirely on manual pen-and-paper ledgers, mental arithmetic, and visual stock estimation. This operating model creates severe operational friction:
+Traditional local vegetable vending relies almost entirely on manual pen-and-paper ledgers, mental arithmetic, and visual stock estimation. This operating model creates severe operational friction for small-scale retail businesses:
 
-1. **Checkout Bottlenecks & Long Queues**: Manual weighing, mental price calculations, and cash tallying slow down transaction speeds during peak market hours.
+1. **Checkout Bottlenecks & Long Queues**: Manual weighing, mental price calculations, and cash tallying slow down transaction speeds during peak morning and evening market hours.
 2. **Billing Inaccuracies & Calculation Errors**: Fluctuating daily produce rates and weight-based fractional quantities (e.g., 1.5 kg, 0.75 kg) frequently lead to calculation mistakes, resulting in direct revenue leakage or customer distrust.
 3. **Inventory Blindspots & Perishable Shrinkage**: Without automated stock tracking, vendors suffer from surprise stockouts of high-demand staples and spoilage/shrinkage of overstocked perishable produce.
 4. **Lack of Transaction Records**: Handwritten or missing receipts make dispute resolution difficult and deprive vendors of historical transaction records.
 5. **Absence of Actionable Business Insights**: Vendors have no consolidated visibility into which vegetable categories drive revenue, stock valuation, or when to reorder stock.
+
+### Key Objectives
+* **Digitize Operations**: Eliminate pen-and-paper record keeping to eliminate computational errors and save vendor time.
+* **Enhance Transaction Efficiency**: Accelerate customer checkout with a digitized cart, automatic price-by-weight calculation, and 5% GST computation.
+* **Inventory Control & Shrinkage Prevention**: Provide real-time visibility into shelf stock levels with automated low-stock warnings (< 5.0 kg).
+* **Business Intelligence & Decision Support**: Empower vendors with visual analytics on inventory capital distribution and category performance.
 
 ---
 
@@ -22,18 +28,19 @@ Traditional local vegetable vending relies almost entirely on manual pen-and-pap
 ### Who benefits?
 
 * **Local Produce Vendors & Shopkeepers**:
-  * **Eliminates Manual Math & Revenue Leakage**: Automatically applies exact item weights, unit rates, and tax calculations with 100% mathematical precision.
-  * **Proactive Stock Management**: Real-time visual alerts flag items falling below safety levels (threshold < 5.0 kg), preventing unexpected stockouts.
-  * **Data-Driven Purchasing**: Visual breakdown of inventory capital by produce category helps vendors invest working capital only in fast-moving items.
-  * **Professional Customer Experience**: Generates and exports itemized, professional receipts, building long-term customer trust.
+  * **Reduced Shrinkage & Loss Prevention**: Live stock tracking prevents unexplained produce loss, over-purchasing of perishable items, and stockouts.
+  * **100% Calculation Precision**: Eliminates math discrepancies across weigh-based pricing and automated tax applications.
+  * **Proactive Inventory Alerts**: Real-time visual alerts flag items falling below safety levels (threshold < 5.0 kg), guiding daily wholesale procurement.
+  * **Professional Trust & Brand Image**: Generates clean, itemized printed or downloadable digital receipts, significantly increasing customer trust.
+  * **Actionable Restocking Decisions**: Visual analytics show capital tied up in each vegetable category, enabling data-driven working capital allocation.
 
 * **End Customers**:
   * **Faster Checkout Speed**: Cuts queue wait times by ~30% through a streamlined digital cart and instant checkout pipeline.
-  * **Transparent Billing**: Clear breakdown of weight, price per kilogram, subtotal, and applicable taxes.
-  * **Payment Flexibility**: Supports multi-mode payments (Cash, UPI, Credit Card simulation).
+  * **Transparent Billing**: Clear, itemized breakdown of weight, price per kilogram, subtotal, and applicable taxes.
+  * **Payment Flexibility**: Accommodates multiple payment methods (Cash, UPI, Credit Card simulation) to suit customer preference.
 
 * **The Informal Retail Ecosystem**:
-  * Provides an accessible, low-overhead bridge from informal pen-and-paper vending to modern enterprise-grade digital retail without demanding expensive POS hardware or complex cloud infrastructure.
+  * Bridges the gap between informal manual vending and enterprise-grade retail automation without demanding expensive POS hardware, subscription fees, or complex cloud dependencies. Serves as a foundational step toward a modern **Smart Retail Setup**.
 
 ---
 
@@ -45,32 +52,73 @@ Data (JSON Store) ──> Preprocessing (Pandas / Dict Normalization) ──> Mo
 
 ```mermaid
 flowchart LR
-    A[Data Layer<br/>inventory_data.json] -->|Load / Persist| B[Preprocessing & State<br/>VegetableDatabase & Pandas]
-    B --> C[Model & Logic Engine<br/>CartManager, Rule Heuristics & PaymentProcessor]
-    C --> D[Service Orchestration<br/>ReceiptGenerator & Order Queue]
-    D --> E[Presentation Layer<br/>Streamlit UI & Plotly Dashboards]
-    E -->|User Actions: Add / Checkout / Dequeue| C
-    C -->|Atomic Update| A
+    subgraph Data_Layer ["Data Layer"]
+        A[inventory_data.json<br/>Persistent JSON Store]
+    end
+
+    subgraph Logic_Layer ["Logic & State Layer"]
+        B[vegetable_database.py<br/>VegetableDatabase & Pandas]
+        C[cart_manager.py<br/>CartManager State Engine]
+        D[payment_processor.py<br/>PaymentProcessor Gateway]
+    end
+
+    subgraph Service_Layer ["Service Orchestration"]
+        E[receipt_generator.py<br/>Receipt Formatting & Tax Engine]
+        F[Order Queue<br/>FIFO Batch Orchestration]
+    end
+
+    subgraph Presentation_Layer ["Presentation Layer (main.py)"]
+        G[Streamlit Responsive UI]
+        H[Plotly Express Dashboards]
+    end
+
+    A <-->|Atomic Sync / Load| B
+    B <-->|Stock Validation & Decrement| C
+    C -->|Order Submission| F
+    C -->|Direct Checkout| D
+    F -->|Process Order| E
+    D -->|Transaction Confirmation| E
+    E -->|Display / Download .txt| G
+    B -->|Inventory DataFrame| H
+    G -->|User Actions| C
 ```
 
-### End-to-End Architectural Pipeline
+### Modular System Architecture
+
+The application follows a **Modular Architecture** where each component handles a focused operational domain:
 
 1. **Data Layer (`inventory_data.json`)**:
    * File-backed persistent storage containing hierarchical product catalogs across 4 vegetable categories with current prices and stock levels.
 2. **Preprocessing & State Management (`vegetable_database.py`)**:
-   * Deserializes JSON payloads into validated in-memory Python dictionaries.
+   * Deserializes JSON payloads into validated in-memory Python dictionaries with fallback defaults.
    * Transforms raw inventory state into structured `pandas.DataFrame` objects for category-wise aggregation, title normalization, and value calculation.
-   * Enforces atomic stock increments/decrements with file system sync upon transaction completion or order cancellation.
+   * Enforces atomic stock increments/decrements with immediate file system sync upon transaction completion or order cancellation. Supports configurable database paths for isolated unit testing.
 3. **Model & Core Logic Engine**:
    * **Inventory Rule Heuristic**: Evaluates live stock thresholds (`stock < 5.0 kg`) to trigger automated replenishment flags.
    * **Cart State Engine (`cart_manager.py`)**: Maintains dynamic session carts, calculating item subtotals (`quantity × price`) and validating availability against real-time stock limits.
-   * **Payment Processing Simulator (`payment_processor.py`)**: Validates transaction payloads (16-digit card validation, CVV syntax, UPI domain checks) and incorporates realistic network latency simulation with stochastic 5% network timeout modeling.
+   * **Payment Processing Simulator (`payment_processor.py`)**: Validates transaction payloads (12–16 digit card validation, CVV syntax, UPI domain checks) and incorporates realistic network latency simulation with stochastic 5% network timeout modeling.
 4. **Service & Document Generation Layer (`receipt_generator.py`)**:
    * Formats structured transaction dictionaries into standardized, thermal-formatted text receipts with timestamps, tax calculations (5% GST), and unique order hashes.
    * Manages FIFO order queuing (`st.session_state.order_queue`) for multi-order handling during peak vendor hours.
-5. **Frontend / Presentation Layer (`main.py`)**:
-   * Modular, reactive interface developed using Streamlit with tab-based navigation across Inventory, Shopping Cart, Order Queue, Analytics, and Payment Gateway.
+5. **Presentation Layer (`main.py`)**:
+   * Modular, reactive interface developed using Streamlit with tab-based navigation across Inventory, Shopping Cart, Order Queue, Receipts, and Analytics.
    * Interactive, responsive visual analytics rendered via Plotly Express.
+
+### Project Directory Structure
+
+```
+Vegetable_Vendor_App/
+├── main.py                 # Streamlit UI & session state orchestration
+├── vegetable_database.py   # Inventory management & JSON file-backed persistence
+├── cart_manager.py         # Shopping cart operations & item summaries
+├── receipt_generator.py    # Receipt formatting, tax calculations & file exports
+├── payment_processor.py    # Simulated multi-mode payment gateway (Card, UPI, Cash)
+├── test_db.py              # Persistence test suite for inventory verification
+├── inventory_data.json     # File-backed persistent storage for inventory
+├── requirements.txt        # Production dependencies (streamlit, pandas, plotly)
+├── config.toml             # Streamlit server configuration
+└── README.md               # Central project documentation
+```
 
 ---
 
@@ -129,13 +177,13 @@ flowchart LR
 
 ## Results
 
-### Performance & Accuracy Metrics
+### Impact Analysis & Performance Metrics
 
 | Metric | Measured Value | Benchmark / Target | Evaluation Method |
 | :--- | :--- | :--- | :--- |
-| **Billing & Tax Accuracy** | **100.0%** | 100.0% | Tested against multi-item orders with fractional quantities |
+| **Billing & Tax Accuracy** | **100.0%** | 100.0% | Evaluated against multi-item carts with fractional weights |
 | **Inventory State Consistency** | **100.0%** | 100.0% | Validated via `test_db.py` automated persistence test suite |
-| **Low-Stock Alert Precision** | **1.00 (100%)** | > 0.95 | No false low-stock triggers above 5.0 kg threshold |
+| **Low-Stock Alert Precision** | **1.00 (100%)** | > 0.95 | Zero false low-stock alarms triggered above 5.0 kg threshold |
 | **Low-Stock Alert Recall** | **1.00 (100%)** | 1.00 | 100% capture of stock quantities $< 5.0\text{ kg}$ |
 | **F1 Score** | **1.00** | > 0.98 | Harmonic mean of stock classification alert precision & recall |
 | **Validation Filter Accuracy** | **100.0%** | 100.0% | Rejects over-stock orders, negative weights, and malformed inputs |
@@ -193,7 +241,7 @@ flowchart LR
    * Notice dynamic badges: items below 5 kg display an `⚠️ Low Stock` warning.
 2. **Step 2: Add to Cart**:
    * Select the desired quantity in kg and click **Add to Cart**.
-   * Available stock updates immediately across the application.
+   * Available stock updates immediately across the application with immediate disk sync.
 3. **Step 3: Cart Management & Order Queue**:
    * Navigate to **Shopping Cart** to inspect items, line totals, and overall amounts.
    * Delete individual items (which instantly restores stock) or click **Add to Order Queue** to save the order for batch billing.
@@ -201,6 +249,7 @@ flowchart LR
    * Click **Proceed to Checkout**, choose payment method (**Credit Card**, **UPI**, or **Cash**), enter required details, and authorize payment.
 5. **Step 5: Receipt Generation**:
    * Receive an automated, itemized receipt complete with store information, order ID, timestamps, tax breakdown, and a one-click **Download Receipt** button (`.txt`).
+   * Review or re-download receipts anytime from the **Receipts** tab.
 6. **Step 6: Business Intelligence Analytics**:
    * Visit the **Analytics** tab to view Plotly-powered stock bar charts and category value distribution pie charts.
 
@@ -237,7 +286,7 @@ flowchart LR
    pip install -r requirements.txt
    ```
 
-4. **Verify Database Persistence (Optional)**
+4. **Verify Database Persistence**
    ```bash
    python test_db.py
    ```
@@ -246,7 +295,7 @@ flowchart LR
    ```bash
    streamlit run main.py
    ```
-   *The application will launch in your default web browser at `http://localhost:8501`.*
+   *The application will launch in your default web browser at `http://localhost:8501` (or `http://localhost:5000` when configured).*
 
 ---
 
@@ -258,8 +307,8 @@ flowchart LR
 | :--- | :--- | :--- |
 | **Inventory Catalog** | Real-time stock display, search filter, and low-stock indicators | ![Inventory Screen](docs/screenshots/inventory.png) *(Place screenshot here)* |
 | **Shopping Cart** | Live subtotal calculation, quantity reviews, and queue dispatch | ![Shopping Cart](docs/screenshots/cart.png) *(Place screenshot here)* |
+| **Order Queue & Receipts** | Processed queue management, receipt inspection, and `.txt` export | ![Receipt Preview](docs/screenshots/receipt.png) *(Place screenshot here)* |
 | **Payment Gateway** | Multi-mode simulated payment interface with card & UPI validation | ![Payment Gateway](docs/screenshots/payment.png) *(Place screenshot here)* |
-| **Receipt Generator** | Itemized thermal-style receipt format with tax & download option | ![Receipt Preview](docs/screenshots/receipt.png) *(Place screenshot here)* |
 | **Vendor Analytics** | Interactive Plotly bar and pie charts for inventory intelligence | ![Analytics Dashboard](docs/screenshots/analytics.png) *(Place screenshot here)* |
 
 ---
