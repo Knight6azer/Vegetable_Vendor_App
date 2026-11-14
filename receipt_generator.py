@@ -10,6 +10,22 @@ class ReceiptGenerator:
         self.store_phone = "+91-9876543210"
         self.tax_rate = 0.05  # 5% tax
 
+    def calculate_totals(self, items: Dict[str, Any]) -> Dict[str, float]:
+        """Single source of truth for subtotal, tax, and grand total calculations."""
+        subtotal = sum(item.get('quantity', 0) * item.get('price', 0)
+                       for item in items.values())
+        tax_amount = subtotal * self.tax_rate
+        total = subtotal + tax_amount
+
+        return {
+            "subtotal": subtotal,
+            "tax_amount": tax_amount,
+            "total": total
+        }
+
+    def format_currency(self, amount: float) -> str:
+        return f"₹{amount:.2f}"
+
     def generate_receipt(self, order_data: Dict[str, Any]) -> str:
         try:
             receipt_lines = []
@@ -30,7 +46,7 @@ class ReceiptGenerator:
                 try:
                     dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                     formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except:
+                except Exception:
                     formatted_time = timestamp
             else:
                 formatted_time = str(timestamp)
@@ -45,15 +61,14 @@ class ReceiptGenerator:
                 "-" * 50
             ])
 
-            subtotal = 0
             items = order_data.get('items', {})
+            totals = self.calculate_totals(items)
 
             for item_id, item in items.items():
                 name = item.get('name', 'Unknown').replace('_', ' ').title()
                 quantity = item.get('quantity', 0)
                 price = item.get('price', 0)
                 amount = quantity * price
-                subtotal += amount
 
                 if len(name) > 18:
                     name = name[:15] + "..."
@@ -62,8 +77,9 @@ class ReceiptGenerator:
                     f"{name:<20} {quantity:<8.1f} {price:<8.0f} {amount:<12.2f}"
                 )
 
-            tax_amount = subtotal * self.tax_rate
-            total_amount = subtotal + tax_amount
+            subtotal = totals["subtotal"]
+            tax_amount = totals["tax_amount"]
+            total_amount = totals["total"]
 
             receipt_lines.extend([
                 "-" * 50,
@@ -75,14 +91,18 @@ class ReceiptGenerator:
                 ""
             ])
 
+            payment_method = order_data.get('payment_method', 'Cash')
             receipt_lines.extend([
-                f"{'Payment Method:':<20} Cash",
+                f"{'Payment Method:':<20} {payment_method}",
                 f"{'Amount Paid:':<20} ₹{total_amount:.2f}",
                 f"{'Change:':<20} ₹0.00",
-                ""
             ])
 
+            if order_data.get('transaction_id'):
+                receipt_lines.append(f"{'Transaction ID:':<20} {order_data['transaction_id']}")
+
             receipt_lines.extend([
+                "",
                 "-" * 50,
                 "Thank you for shopping with us!",
                 "Fresh vegetables, fresh prices!",
@@ -109,21 +129,20 @@ class ReceiptGenerator:
                 "Items purchased:"
             ]
 
-            total = 0
             items = order_data.get('items', {})
+            totals = self.calculate_totals(items)
 
             for item in items.values():
                 name = item.get('name', 'Unknown').replace('_', ' ').title()
                 quantity = item.get('quantity', 0)
                 price = item.get('price', 0)
                 amount = quantity * price
-                total += amount
 
                 lines.append(f"- {name}: {quantity} kg × ₹{price} = ₹{amount:.2f}")
 
             lines.extend([
                 "",
-                f"Total Amount: ₹{total:.2f}",
+                f"Total Amount: ₹{totals['total']:.2f}",
                 "",
                 "Thank you for your purchase!"
             ])
@@ -146,21 +165,6 @@ class ReceiptGenerator:
         }
 
         return json.dumps(receipt_data, indent=2)
-
-    def calculate_totals(self, items: Dict[str, Any]) -> Dict[str, float]:
-        subtotal = sum(item.get('quantity', 0) * item.get('price', 0)
-                       for item in items.values())
-        tax_amount = subtotal * self.tax_rate
-        total = subtotal + tax_amount
-
-        return {
-            "subtotal": subtotal,
-            "tax_amount": tax_amount,
-            "total": total
-        }
-
-    def format_currency(self, amount: float) -> str:
-        return f"₹{amount:.2f}"
 
     def get_receipt_summary(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
         items = order_data.get('items', {})
