@@ -6,7 +6,8 @@ from typing import Dict, Any
 DB_FILE = "inventory_data.json"
 
 class VegetableDatabase:
-    def __init__(self):
+    def __init__(self, db_file: str = DB_FILE):
+        self.db_file = db_file
         self.default_data = {
             "Ground": {
                 "Potato": {"price": 30, "stock": 50},
@@ -46,9 +47,9 @@ class VegetableDatabase:
 
     def load_data(self) -> Dict:
         """Load inventory from JSON file or use default."""
-        if os.path.exists(DB_FILE):
+        if os.path.exists(self.db_file):
             try:
-                with open(DB_FILE, 'r') as f:
+                with open(self.db_file, 'r') as f:
                     return json.load(f)
             except:
                 return self.default_data
@@ -56,7 +57,7 @@ class VegetableDatabase:
 
     def save_data(self):
         """Save current inventory state to JSON."""
-        with open(DB_FILE, 'w') as f:
+        with open(self.db_file, 'w') as f:
             json.dump(self.vegetables, f, indent=4)
 
     def get_all_vegetables(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
